@@ -1,0 +1,5 @@
+# ignore cfg files
+*.cfg
+
+# ignore venv directories
+venv/* 

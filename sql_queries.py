@@ -123,27 +123,89 @@ sortkey(year, month, day);
 # STAGING TABLES
 
 staging_events_copy = ("""
-""").format()
+COPY staging_events_table (
+    artist, auth, firstName, gender, itemInSession, lastName,
+    length, level, location, method, page, registration,
+    sessionId, song, status, ts, userAgent, userId
+)
+FROM {} iam_role {} json {} region 'us-west-2';
+""").format(config['S3']['log_data'], config['IAM_ROLE']['arn'], config['S3']['log_jsonpath'])
 
 staging_songs_copy = ("""
-""").format()
+copy staging_songs_table
+FROM {} iam_role {} json 'auto' region 'us-west-2';
+""").format(config['S3']['song_data'], config['IAM_ROLE']['arn'])
 
 # FINAL TABLES
 
 songplay_table_insert = ("""
+INSERT INTO songplays (
+    start_time, user_id, level, song_id, artist_id, session_id,
+    location, user_agent)
+SELECT
+    st.ts, st.userId, st.level, ss.song_id, ss.artist_id, st.sessionId, st.location, st.userAgent
+FROM staging_events_table st
+JOIN (
+    SELECT s.song_id, s.artist_id, s.title AS song, a.name AS artist, s.duration 
+    FROM songs s
+    JOIN artists a ON s.artist_id = a.artist_id
+) sa 
+ON st.song = sa.song AND st.artist = sa.artist AND st.length = sa.duration
 """)
 
 user_table_insert = ("""
+INSERT INTO users (user_id, first_name, last_name, gender, level)
+SELECT userId, firstName, lastName, gender, level
+FROM (
+    SELECT userId, firstName, lastName, gender, level,
+    ROW_NUMBER() OVER (PARTITION BY userId
+                        ORDER BY firstName, lastName, gender, level) AS rank_user_by_id
+    FROM staging_events_table
+    WHERE userId IS NOT NULL
+) AS ranked
+WHERE ranked.rank_user_by_id = 1;
 """)
 
 song_table_insert = ("""
+INSERT INTO songs (song_id, title, artist_id, year, duration)
+SELECT song_id, title, artist_id, year, duration
+FROM (
+    SELECT song_id, title, artist_id, year, duration,
+    ROW_NUMBER() OVER (PARTITION BY song_id
+                        ORDER BY title, artist_id, year, duration) AS rank_song_by_id
+    FROM staging_songs_table
+    WHERE song_id IS NOT NULL
+) AS ranked
+WHERE ranked.rank_song_by_id = 1;
 """)
 
 artist_table_insert = ("""
+INSERT INTO artists (artist_id, name, location, latitude, longitude)
+SELECT artist_id, name, location, latitude, longitude
+FROM (
+    SELECT artist_id, name, location, latitude, longitude,
+    ROW_NUMBER() OVER (PARTITION BY artist_id
+                        ORDER BY name, location, latitude, longitude) AS rank_artist_by_id
+    FROM staging_songs_table
+    WHERE artist_id IS NOT NULL
+) AS ranked
+WHERE ranked.rank_artist_by_id = 1;
 """)
 
 time_table_insert = ("""
+INSERT INTO time (start_time, hour, day, week, month, year, weekday)
+SELECT 'epoch'::timestamp + ts/1000 * interval '1 second' AS start_time, 
+        extract(hour from ts) AS hour, 
+        extract(day from ts) AS day, 
+        extract(week from ts) AS week, 
+        extract(month from ts) AS month, 
+        extract(year from ts) AS year, 
+        extract(weekday from ts) AS weekday
+FROM staging_events_table
+WHERE ts IS NOT NULL; 
 """)
+
+staging_row_count = "SELECT COUNT(*) AS count FROM {}"
 
 # QUERY LISTS
 

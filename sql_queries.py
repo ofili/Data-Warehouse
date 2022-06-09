@@ -9,11 +9,11 @@ config.read('dwh.cfg')
 
 staging_events_table_drop = "DROP TABLE IF EXISTS staging_events_table" # drop staging_events_table
 staging_songs_table_drop = "DROP TABLE IF EXISTS staging_songs_table" # drop staging_songs_table	
-songplay_table_drop = "DROP TABLE IF EXISTS songplay_table" # drop songplay_table
-user_table_drop = "DROP TABLE IF EXISTS user_table" # drop user_table
-song_table_drop = "DROP TABLE IF EXISTS song_table" # drop song_table
-artist_table_drop = "DROP TABLE IF EXISTS artist_table" # drop artist_table
-time_table_drop = "DROP TABLE IF EXISTS time_table" # drop time_table
+songplay_table_drop = "DROP TABLE IF EXISTS songplays" # drop songplays table
+user_table_drop = "DROP TABLE IF EXISTS users" # drop user_table
+song_table_drop = "DROP TABLE IF EXISTS songs" # drop song_table
+artist_table_drop = "DROP TABLE IF EXISTS artists" # drop artist_table
+time_table_drop = "DROP TABLE IF EXISTS time" # drop time_table
 
 # CREATE TABLES
 
@@ -213,3 +213,10 @@ create_table_queries = [staging_events_table_create, staging_songs_table_create,
 drop_table_queries = [staging_events_table_drop, staging_songs_table_drop, songplay_table_drop, user_table_drop, song_table_drop, artist_table_drop, time_table_drop]
 copy_table_queries = [staging_events_copy, staging_songs_copy]
 insert_table_queries = [songplay_table_insert, user_table_insert, song_table_insert, artist_table_insert, time_table_insert]
+
+copy_staging_order = ['staging_events_table', 'staging_songs_table']
+count_staging_queries = [staging_row_count.format(table) for table in copy_staging_order if table != staging_events_table_create and table != staging_songs_table_create]
+
+insert_table_order = ['users', 'songs', 'artists', 'time', 'songplays']
+
+count_fact_dim_queries = [staging_row_count.format(table) for table in copy_staging_order] + [staging_row_count.format(table) for table in insert_table_order if table != 'songplays' and table != 'time' and table != 'artists' and table != 'songs' and table != 'users' ]

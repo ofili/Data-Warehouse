@@ -1,34 +1,29 @@
 import boto3
 import configparser
 
-def main():
-    """
-    This function will teardown the Redshift cluster.
-    """
-    config = configparser.ConfigParser()
-    config.read('dwh.cfg')
 
-    # Get the Redshift client
+config = configparser.ConfigParser()
+config.read('dwh.cfg')
+
+# Load  DWH parameters from config file
+KEY                         = config.get('AWS', 'KEY')
+SECRET                      = config.get('AWS', 'SECRET')
+DWH_CLUSTER_IDENTIFIER      = config.get('DWH', 'DWH_CLUSTER_IDENTIFIER')
+DWH_IAM_ROLE_NAME           = config.get('DWH', 'DWH_IAM_ROLE_NAME')
+
+def delete_cluster(DWH_CLUSTER_IDENTIFIER):
+    """
+    This function will delete the Redshift cluster.
+    """
     redshift = boto3.client('redshift', region_name='us-west-2', aws_access_key_id=KEY, aws_secret_access_key=SECRET)
-
-    # Get IAM client
-    iam = boto3.client('iam', region_name='us-east-1', aws_access_key_id=KEY, aws_secret_access_key=SECRET)
-
-    # Get the cluster identifier
-    cluster_identifier = config.get('CLUSTER', 'CLUSTER_IDENTIFIER')
-
     # Delete the cluster
-    redshift.delete_cluster(ClusterIdentifier=cluster_identifier, SkipFinalClusterSnapshot=True)
-
-    # Delete the role
-    iam.detach_role_policy(RoleName='RedshiftReadOnlyAccess', PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess')
-    iam.delete_role(RoleName='RedshiftReadOnlyAccess')
+    redshift.delete_cluster(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER, SkipFinalClusterSnapshot=True)
 
     # Wait for the cluster to be deleted
     print("Waiting for the cluster to be deleted...")
     while True:
         try:
-            response = redshift.describe_clusters(ClusterIdentifier=cluster_identifier)
+            response = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)
         except Exception as e:
             print(e)
             break
@@ -38,6 +33,29 @@ def main():
         else:
             print("Cluster is not being deleted...")
             break
+
+def delete_role(DWH_IAM_ROLE_NAME):
+    """
+    This function will delete the Redshift cluster.
+    """
+    iam = boto3.client('iam', region_name='us-east-1', aws_access_key_id=KEY, aws_secret_access_key=SECRET)
+    # Delete the role
+    iam.detach_role_policy(RoleName='DWH_IAM_ROLE_NAME', PolicyArn='arn:aws:iam::aws:policy/AmazonS3ReadOnlyAccess')
+    iam.delete_role(RoleName='DWH_IAM_ROLE_NAME')
+
+def main():
+    """
+    Main function.
+    """
+    
+
+
+    # Delete the cluster
+    delete_cluster(DWH_CLUSTER_IDENTIFIER)
+    print("Cluster deleted")
+
+    # Delete the role
+    delete_role(DWH_IAM_ROLE_NAME)
 
 
 if __name__ == "__main__":

@@ -2,15 +2,20 @@ import boto3
 import json
 import configparser
 
+
+
+config = configparser.ConfigParser()
+config.read('dwh.cfg')
+
+# Load  DWH parameters from config file
+KEY                         = config.get('AWS', 'KEY')
+SECRET                      = config.get('AWS', 'SECRET')
+
 def create_iam_role(DWH_IAM_ROLE_NAME):
     """
     Creates an IAM role for redshift cluster.
     """
-    iam = boto3.client('iam',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
+    iam = boto3.client('iam', region_name='us-east-1', aws_access_key_id=KEY, aws_secret_access_key=SECRET)
     # Create IAM role
     try:
         print("1.1 Creating a new IAM Role")
@@ -26,6 +31,7 @@ def create_iam_role(DWH_IAM_ROLE_NAME):
         )
     except Exception as e:
         print(e)
+        print("IAM Role already exists")
 
     print("1.2 Attaching Policy")
     # Attach Policy
@@ -39,59 +45,13 @@ def create_iam_role(DWH_IAM_ROLE_NAME):
     return roleArn
 
 
-def main():
+def create_redshift_cluster(DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_CLUSTER_IDENTIFIER, DWH_DB_NAME, DWH_DB_USER, DWH_DB_PASSWORD, DWH_PORT, DWH_IAM_ROLE_NAME):
     """
-    Main function.
+    Creates a Redshift cluster.
     """
-    config = configparser.ConfigParser()
-    # config.read('dwh.cfg')
-    config.read_file(open('dwh.cfg'))
-
-    # Load  DWH parameters from config file
-    KEY                         = config.get('AWS', 'KEY')
-    SECRET                      = config.get('AWS', 'SECRET')
-
-    DWH_CLUSTER_TYPE            = config.get('AWS', 'DWH_CLUSTER_TYPE')
-    DWH_NUM_NODES               = config.get('AWS', 'DWH_NUM_NODES')
-    DWH_NODE_TYPE               = config.get('AWS', 'DWH_NODE_TYPE')
-
-    DWH_CLUSTER_IDENTIFIER      = config.get('AWS', 'DWH_CLUSTER_IDENTIFIER')
-    DWH_DB                      = config.get('AWS', 'DWH_DB')
-    DWH_DB_USER                 = config.get('AWS', 'DWH_DB_USER')
-    DWH_DB_PASSWORD             = config.get('AWS', 'DWH_DB_PASSWORD')
-    DWH_PORT                    = config.get('AWS', 'DWH_PORT')
-
-    DWH_IAM_ROLE_NAME           = config.get("DWH", "DWH_IAM_ROLE_NAME")
-
-    # Create clients for EC2, S3, IAM, and Redshift
-    ec2 = boto3.resource('ec2',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
-    s3 = boto3.resource('s3',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
-    iam = boto3.client('iam',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
-    redshift = boto3.client('redshift',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
-
-    # Create IAM role
-    roleArn = create_iam_role(DWH_IAM_ROLE_NAME)
-    print(roleArn)
-
+    redshift = boto3.client('redshift', region_name='us-west-2', aws_access_key_id=KEY, aws_secret_access_key=SECRET)
     # Create Redshift cluster
     try:
-        print("2.1 Create Redshift Cluster")
         response = redshift.create_cluster(        
             #HW
             ClusterType=DWH_CLUSTER_TYPE,
@@ -103,12 +63,14 @@ def main():
             ClusterIdentifier=DWH_CLUSTER_IDENTIFIER,
             MasterUsername=DWH_DB_USER,
             MasterUserPassword=DWH_DB_PASSWORD,
-            IamRoles=[roleArn]  
+            
+            #Roles (for s3 access)
+            IamRoles=[role_arn]  
         )
 
-        # Open an incoming TCP port to access the endpoint
-        vcp = ec2.Vcp(id = myClusterProps['VcpId'])
-        default_sg = list(vcp.security_groups.all())[0]
+        # Open an incoming  TCP port to access the cluster endpoint
+        vpc = ec2.Vpc(id=myClusterProps['VpcId'])
+        default_sg = list(vpc.security_groups.all())[0]
         default_sg.authorize_ingress(
             GroupName=default_sg.group_name,
             CidrIp='0.0.0.0/0',
@@ -116,28 +78,76 @@ def main():
             FromPort=int(DWH_PORT),
             ToPort=int(DWH_PORT)
         )
-
     except Exception as e:
         print(e)
+    
+    print("3.6 Get the cluster endpoint and port")
+    myClusterProps = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
+    DWH_ENDPOINT = myClusterProps['Endpoint']['Address']
+    DWH_ROLE_ARN = myClusterProps['IamRoles'][0]['IamRoleArn']
+    DWH_CLUSTER_IDENTIFIER = myClusterProps['ClusterIdentifier']
+    DWH_CLUSTER_STATUS = myClusterProps['ClusterStatus']
+    DWH_CLUSTER_TYPE = myClusterProps['ClusterType']
+    DWH_NODE_TYPE = myClusterProps['NodeType']
+    DWH_NUM_NODES = myClusterProps['NumberOfNodes']
+    DWH_DB_NAME = myClusterProps['VpcSecurityGroups'][0]['VpcSecurityGroupMemberships'][0]['VpcSecurityGroupId']
+    DWH_DB_USER = myClusterProps['MasterUsername']
+    DWH_DB_PASSWORD = myClusterProps['MasterUserPassword']
+    DWH_PORT = myClusterProps['Endpoint']['Port']
+    DWH_CLUSTER_IDENTIFIER = myClusterProps['ClusterIdentifier']
+    DWH_CLUSTER_STATUS = myClusterProps['ClusterStatus']
+    DWH_CLUSTER_TYPE = myClusterProps['ClusterType']
+    DWH_NODE_TYPE = myClusterProps['NodeType']
 
-    # Wait for cluster to be available
-    print("2.2 Wait for cluster to be available")
-    while True:
-        if redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['ClusterStatus'] == 'available':
-            break
-        else:
-            print("Cluster is not available yet. Sleeping for 10 seconds...")
-            time.sleep(10)
 
-    # Get cluster endpoint and port
-    print("2.3 Get cluster endpoint and port")
-    DWH_ENDPOINT = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['Endpoint']['Address']
-    DWH_ROLE_ARN = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['IamRoles'][0]['IamRoleArn']
-    DWH_CLUSTER_ARN = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['ClusterIdentifier']
-    DWH_DB_NAME = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['DBName']
-    DWH_DB_USER = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['MasterUsername']
-    DWH_DB_PASSWORD = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['MasterUsername']
-    DWH_PORT = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['Endpoint']['Port']
+def main():
+    """
+    Main function.
+    """
+    
+
+    # Load  DWH parameters from config file
+
+    DWH_CLUSTER_TYPE            = config.get('DWH', 'DWH_CLUSTER_TYPE')
+    DWH_NUM_NODES               = config.get('DWH', 'DWH_NUM_NODES')
+    DWH_NODE_TYPE               = config.get('DWH', 'DWH_NODE_TYPE')
+
+    DWH_CLUSTER_IDENTIFIER      = config.get('DWH', 'DWH_CLUSTER_IDENTIFIER')
+    DWH_DB                      = config.get('DWH', 'DWH_DB')
+    DWH_DB_USER                 = config.get('DWH', 'DWH_DB_USER')
+    DWH_DB_PASSWORD             = config.get('DWH', 'DWH_DB_PASSWORD')
+    DWH_PORT                    = config.get('DWH', 'DWH_PORT')
+
+    DWH_IAM_ROLE_NAME           = config.get("DWH", "DWH_IAM_ROLE_NAME")
+    # Create clients for EC2, S3, IAM, and Redshift
+    ec2 = boto3.resource('ec2',
+                        region_name="us-east-1",
+                        aws_access_key_id=KEY,
+                        aws_secret_access_key=SECRET
+                        )
+    s3 = boto3.resource('s3',
+                        region_name="us-east-1",
+                        aws_access_key_id=KEY,
+                        aws_secret_access_key=SECRET
+                        )
+    iam = boto3.client('iam',
+                        region_name="us-east-1",
+                        aws_access_key_id=KEY,
+                        aws_secret_access_key=SECRET
+                        )
+    redshift = boto3.client('redshift',
+                        region_name="us-east-1",
+                        aws_access_key_id=KEY,
+                        aws_secret_access_key=SECRET
+                        )
+
+    # Create IAM role
+    roleArn = create_iam_role(DWH_IAM_ROLE_NAME)
+    print(roleArn)
+
+    # Create Redshift cluster
+    response = create_redshift_cluster(DWH_CLUSTER_TYPE, DWH_NODE_TYPE, DWH_NUM_NODES, DWH_CLUSTER_IDENTIFIER, DWH_DB, DWH_DB_USER, DWH_DB_PASSWORD, DWH_PORT, DWH_IAM_ROLE_NAME)
+    print(response)
 
 if __name__ == '__main__':
     main()

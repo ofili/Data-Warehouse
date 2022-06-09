@@ -44,6 +44,7 @@ def main():
     config.read('dwh.cfg')
 
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
+    print(f'connected to redshift cluster')
     cur = conn.cursor()
     
     load_staging_tables(cur, conn)

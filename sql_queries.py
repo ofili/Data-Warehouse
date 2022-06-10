@@ -84,7 +84,7 @@ CREATE TABLE IF NOT EXISTS users (
 """)
 
 song_table_create = ("""
-CREATE TABLE songs (
+CREATE TABLE IF NOT EXISTS songs (
     song_id varchar(20) PRIMARY KEY,
     title varchar(256) NOT NULL,
     artist_id varchar(20) NOT NULL,
@@ -96,7 +96,7 @@ sortkey(year, title, duration);
 """)
 
 artist_table_create = ("""
-CREATE TABLE artists (
+CREATE TABLE IF NOT EXISTS artists (
     artist_id varchar(20) PRIMARY KEY,
     name varchar(256) NOT NULL,
     location varchar(256),
@@ -108,7 +108,7 @@ sortkey(name, location);
 """)
 
 time_table_create = ("""
-CREATE TABLE time (
+CREATE TABLE IF NOT EXISTS time (
     start_time timestamp PRIMARY KEY distkey,
     hour smallint NOT NULL,
     day smallint NOT NULL,

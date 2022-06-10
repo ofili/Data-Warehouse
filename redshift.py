@@ -2,6 +2,8 @@ import boto3
 import json
 import configparser
 
+import pandas as pd
+
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
@@ -106,10 +108,7 @@ def create_redshift_cluster(DWH_IAM_ROLE_NAME, DWH_CLUSTER_TYPE, DWH_NUM_NODES, 
             IamRoles=[roleArn]
         )
         print(f"Redshift cluster created successfully." + "\n" + "-"*50 + "\n")
-        print("Printing endpoint...")
-        # Print the endpoint
-        endpoint = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]['Endpoint']['Address']
-        print(f"Endpoint: {endpoint}" + "\n" + "-"*50 + "\n")
+        
 
         # Check if cluster is available
         print("Checking if cluster is available...")
@@ -121,29 +120,19 @@ def create_redshift_cluster(DWH_IAM_ROLE_NAME, DWH_CLUSTER_TYPE, DWH_NUM_NODES, 
             else:
                 print(f"Cluster is not available. Waiting...")
                 time.sleep(5)
-            
-
-        # Open an incoming  TCP port to access the cluster endpoint
-        try:
-            print("Opening TCP port...")
-            vpc = ec2.Vpc(id=vpc_id)
-            defaultSg = list(vpc.security_groups.all())[0]
-            print(f"Default security group: {defaultSg}")
-            defaultSg.authorize_ingress(
-                GroupName=defaultSg.group_name,
-                CidrIp='0.0.0.0/0',
-                IpProtocol='TCP',
-                FromPort=int(DWH_PORT),
-                ToPort=int(DWH_PORT)
-            )
-            print("VPC and subnets created successfully.")
-        except Exception as e:
-            print(e)
-            print(f"VPC and subnets not created." + str(e))
-            
     except Exception as e:
         print(e)
         print(f"Redshift cluster not created." + str(e) + "\n" + "-"*50 + "\n")
+
+def prettyRedshiftProps(props):
+    """
+    This function will pretty print the redshift cluster properties.
+    """
+    pd.set_option('display.max_colwidth', None)
+    keysToShow = ["ClusterIdentifier", "NodeType", "ClusterStatus", "MasterUsername", "DBName", "Endpoint", "NumberOfNodes", "VpcId"]
+    x = [(k, v) for k,v in props.items() if k in keysToShow]
+    return pd.DataFrame(data=x, columns=["Key", "Value"])
+
 
 
 def main():
@@ -152,9 +141,38 @@ def main():
     """
 
     
-# Create a new IAM role
-roleArn = create_iam_role(DWH_IAM_ROLE_NAME)
-create_redshift_cluster(DWH_IAM_ROLE_NAME, DWH_CLUSTER_TYPE, DWH_NUM_NODES, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DWH_DB, DWH_DB_USER, DWH_DB_PASSWORD, DWH_PORT)
+    # Create a new IAM role
+    roleArn = create_iam_role(DWH_IAM_ROLE_NAME)
+    create_redshift_cluster(DWH_IAM_ROLE_NAME, DWH_CLUSTER_TYPE, DWH_NUM_NODES, DWH_NODE_TYPE, DWH_CLUSTER_IDENTIFIER, DWH_DB, DWH_DB_USER, DWH_DB_PASSWORD, DWH_PORT)
+
+    myClusterProps = redshift.describe_clusters(ClusterIdentifier=DWH_CLUSTER_IDENTIFIER)['Clusters'][0]
+    prettyRedshiftProps(myClusterProps)
+    DWH_ENDPOINT = myClusterProps['Endpoint']['Address']
+    DWH_ROLE_ARN = myClusterProps['IamRoles'][0]['IamRoleArn']
+    print("DWH_ENDPOINT: {}".format(DWH_ENDPOINT))
+    print("DWH_ROLE_ARN: {}".format(DWH_ROLE_ARN))
+    print("-"*50 + "\n")
+
+
+    # Open an incoming  TCP port to access the cluster endpoint
+    try:
+        print("Opening TCP port...")
+        vpc = ec2.Vpc(id=myClusterProps['VpcId'])
+        defaultSg = list(vpc.security_groups.all())[0]
+        print(f"Default security group: {defaultSg}")
+        defaultSg.authorize_ingress(
+            GroupName=defaultSg.group_name,
+            CidrIp='0.0.0.0/0',
+            IpProtocol='TCP',
+            FromPort=int(DWH_PORT),
+            ToPort=int(DWH_PORT)
+        )
+        print("VPC and subnets created successfully." + "\n" + "-"*50 + "\n")
+    except Exception as e:
+        print(e)
+        print(f"VPC and subnets not created." + str(e) + "\n" + "-"*50 + "\n")
+
+    
 
 if __name__ == '__main__':
     main()

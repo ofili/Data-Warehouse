@@ -3,15 +3,6 @@ import psycopg2
 from sql_queries import create_table_queries, drop_table_queries
 
 
-config = configparser.ConfigParser()
-config.read('dwh.cfg')
-
-DWH_DB                      = config.get('DWH', 'DWH_DB')
-DWH_DB_USER                 = config.get('DWH', 'DWH_DB_USER')
-DWH_DB_PASSWORD             = config.get('DWH', 'DWH_DB_PASSWORD')
-DWH_PORT                    = config.get('DWH', 'DWH_PORT')
-DWH_ENDPOINT                = config.get('DWH', 'DWH_ENDPOINT')
-
 def drop_tables(cur, conn):
     """
     DROP TABLES
@@ -49,13 +40,30 @@ def main():
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 
+    # Connection parameters
+    host = config.get('CLUSTER', 'HOST')
+    dbname = config.get('CLUSTER', 'DB_NAME')
+    user = config.get('CLUSTER', 'DB_USER')
+    password = config.get('CLUSTER', 'DB_PASSWORD')
+    port = config.get('CLUSTER', 'DB_PORT')
+
+    # Establish the database connection
+    print('-'*50 + ' establishing connection' + '-'*50)
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
     print(conn)
-    print(f'connected to redshift cluster'.format(DWH_ENDPOINT))
+    print(f'connected to redshift cluster'.format(host))
+    print('-'*50 + ' connection established ' + '-'*50)
     cur = conn.cursor()
 
+    # Drop tables
+    print(f'dropping tables'.format(host))
     drop_tables(cur, conn)
+    print('-'*50 + ' tables dropped ' + '-'*50)
+
+    # Create tables
+    print(f'creating tables'.format(host))
     create_tables(cur, conn)
+    print('-'*50 + ' tables created ' + '-'*50)
 
     conn.close()
 

@@ -1,5 +1,6 @@
 # ignore cfg files
 *.cfg
+test.py
 
 # ignore venv directories
 venv/* 

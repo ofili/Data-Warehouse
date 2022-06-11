@@ -11,6 +11,15 @@ def load_staging_tables(cur, conn):
         cur.execute(query)
         conn.commit()
 
+def insert_tables(cur, conn):
+    """
+    Inserts data from staging tables to fact and dimension tables.
+    """
+    for query in insert_table_queries:
+        cur.execute(query)
+        conn.commit()
+
+
 
 def count_staging(cur, conn):
     """
@@ -20,15 +29,6 @@ def count_staging(cur, conn):
         cur.execute(query)
         conn.commit()
         print(cur.fetchall())
-
-
-def insert_tables(cur, conn):
-    """
-    Inserts data from staging tables to fact and dimension tables.
-    """
-    for query in insert_table_queries:
-        cur.execute(query)
-        conn.commit()
 
 
 def dim_query_count(cur, conn):

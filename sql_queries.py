@@ -141,14 +141,10 @@ FROM {} iam_role {} json 'auto' region 'us-west-2';
 songplay_table_insert = (""" INSERT INTO songplays (
         start_time, user_id, level, song_id, artist_id, session_id, location, user_agent)
     SELECT
-        st.ts, st.user_id, st.level, sa.song_id, sa.artist_id, st.session_id, st.location, st.user_agent
+        st.ts, st.user_id, st.level, s.song_id, s.artist_id, st.session_id, st.location, st.user_agent
     FROM staging_events_table st
-    JOIN (
-        SELECT s.song_id, s.artist_id, s.title AS song, a.name AS artist, s.duration 
-        FROM songs s
-        JOIN artists a ON s.artist_id = a.artist_id
-    ) sa 
-    ON st.song = sa.song AND st.artist = sa.artist AND st.length = sa.duration
+    JOIN  staging_songs_table s
+    ON st.song = s.title AND st.artist = s.artist_name AND st.length = s.duration
 """)
 
 user_table_insert = (""" INSERT INTO users (
@@ -213,15 +209,15 @@ insert_table_queries = [songplay_table_insert, user_table_insert, song_table_ins
                         time_table_insert]
 
 copy_staging_order = ['staging_events_table', 'staging_songs_table']
-count_staging_queries = [staging_row_count.format(table) for table in copy_staging_order] # list of queries to count staging tables
-
+count_staging_queries = [staging_row_count.format(table) for table in
+                        copy_staging_order]  # list of queries to count staging tables
 
 insert_table_order = ['users', 'songs', 'artists', 'time', 'songplays']
 
-count_fact_dim_queries = [
-    "SELECT COUNT(*) AS count FROM users",
-    "SELECT COUNT(*) AS count FROM songs",
-    "SELECT COUNT(*) AS count FROM artists",
-    "SELECT COUNT(*) AS count FROM time",
-    "SELECT COUNT(*) AS count FROM songplays"
-]
+# count_fact_dim_queries = [staging_row_count.format(table) for table in copy_staging_order] + [staging_row_count.format(table) for table in insert_table_order if table != 'songplays' and table != 'time' and table != 'artists' and table != 'songs' and table != 'users' ]
+
+count_fact_dim_queries = [staging_row_count.format(insert_table_order[0]),
+                        staging_row_count.format(insert_table_order[1]),
+                        staging_row_count.format(insert_table_order[2]),
+                        staging_row_count.format(insert_table_order[3]),
+                        staging_row_count.format(insert_table_order[4])]

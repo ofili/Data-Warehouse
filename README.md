@@ -11,12 +11,12 @@ This data ETL pipeline populates the sparkifydb database in AWS Redshift.
 ## Why Redshift?
 --- 
 * Amazon Redshift uses SQL to analyze structured and semi-structured data across data warehouses, operational databases, and data lakes, using AWS-designed hardware and machine learning to deliver the best price performance at any scale.
-![Redshift](data/Redshift.PNG) 
+![Redshift](img/Redshift.PNG) 
 
 ## Database Design
 ---
 * For the schema design, the STAR schema is used as it simplifies queries and provides fast aggregations of data.
-![Schema](data/schema.PNG)
+![Schema](img/schema.PNG)
 
 * `songplays` is the facts table while `users`, `artists`, `songs` and `time` the dimension tables.
 

@@ -50,8 +50,10 @@ This data ETL pipeline populates the sparkifydb database in AWS Redshift.
 ---
 * First, run redshift_setup.py to set up the Redshift cluster and IAM role.
 
-* Then run main.py to 
--- create the tables specified in the in the sql_queries.py file. If tables were created previously, they will be dropped and recreated.
--- load data from S3 into staging tables.
--- insert data into fact and dimension tables from staging tables.
+* Then run main.py to:
+<ol>
+    <li>Create all tables in the sparkifydb database</li>
+    <li>Load data from S3 into staging tables</li>
+    <li>Insert data into fact and dimension tables from staging tables</li>
+</ol>
 ---

@@ -3,6 +3,9 @@
 test.py
 schema.py
 runtime.ipynb
+logging.py
+*.ini
+
 
 # ignore venv directories
 venv/* 

@@ -3,9 +3,12 @@ import time
 import boto3
 import json
 import configparser
+import logging
 
 import pandas as pd
 
+
+# Load cluster configuration from config file
 config = configparser.ConfigParser()
 config.read('dwh.cfg')
 
@@ -23,6 +26,8 @@ DWH_DB_PASSWORD = config.get('DWH', 'DWH_DB_PASSWORD')
 DWH_PORT = config.get('DWH', 'DWH_PORT')
 
 DWH_IAM_ROLE_NAME = config.get("DWH", "DWH_IAM_ROLE_NAME")
+
+
 
 # Create clients for EC2, S3, IAM, and Redshift
 ec2 = boto3.resource('ec2',
@@ -45,6 +50,8 @@ redshift = boto3.client('redshift',
                     aws_access_key_id=KEY,
                     aws_secret_access_key=SECRET
                     )
+
+# Setting up logger
 
 
 # Create the IAM role

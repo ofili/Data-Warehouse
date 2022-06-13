@@ -71,7 +71,7 @@ def main():
     print("Cluster deleted")
 
     # Delete the role
-    #delete_role(DWH_IAM_ROLE_NAME)
+    delete_role(DWH_IAM_ROLE_NAME)
     print("Role deleted")
 
 if __name__ == "__main__":

@@ -13,9 +13,8 @@ def drop_tables(cur, conn):
     Return: 
         None
     """
-    for query in drop_table_queries:
-        cur.execute(query)
-        conn.commit()
+    [cur.execute(query) for query in drop_table_queries] # execute all queries in list
+    conn.commit() # commit the changes to the database
 
 
 def create_tables(cur, conn):
@@ -28,12 +27,11 @@ def create_tables(cur, conn):
     Return: 
         None
     """
-    for query in create_table_queries:
-        cur.execute(query)
-        conn.commit()
+    [cur.execute(query) for query in create_table_queries] # execute all queries in list
+    conn.commit() # commit the changes to the database
 
 
-def main():
+''' def main():
     """
     Establish connection to redshift and create tables, drop tables, and close connection
     """
@@ -70,3 +68,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+'''

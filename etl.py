@@ -7,17 +7,15 @@ def load_staging_tables(cur, conn):
     """
     Loads staging tables from S3 bucket to  redshift cluster.
     """
-    for query in copy_table_queries:
-        cur.execute(query)
-        conn.commit()
+    [cur.execute(query) for query in copy_table_queries] # execute all queries in list
+    conn.commit() # commit the changes to the table
 
 def insert_tables(cur, conn):
     """
     Inserts data from staging tables to fact and dimension tables.
     """
-    for query in insert_table_queries:
-        cur.execute(query)
-        conn.commit()
+    [cur.execute(query) for query in insert_table_queries] # execute all queries in list
+    conn.commit() # commit the changes to the table
 
 
 
@@ -41,7 +39,7 @@ def dim_query_count(cur, conn):
         print(cur.fetchall())
 
 
-def main():
+''' def main():
     """
     Establishes connection to redshift cluster and loads staging tables.
     """
@@ -76,4 +74,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main() '''

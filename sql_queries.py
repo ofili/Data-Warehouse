@@ -22,7 +22,8 @@ time_table_drop = "DROP TABLE IF EXISTS time"  # drop time_table
 
 # CREATE TABLES
 
-staging_songs_table_create = (""" CREATE TABLE IF NOT EXISTS staging_songs_table (
+staging_songs_table_create = (""" CREATE TABLE staging_songs_table (
+    staging_song_id     BIGINT IDENTITY(0,1) NOT NULL,
     song_id             VARCHAR(100),
     title               VARCHAR(200),
     duration            FLOAT4,
@@ -36,88 +37,87 @@ staging_songs_table_create = (""" CREATE TABLE IF NOT EXISTS staging_songs_table
     );
 """)
 
-staging_events_table_create = (""" CREATE TABLE IF NOT EXISTS staging_events_table (
-    artist          VARCHAR(200),
-    auth            VARCHAR(100),
-    first_name      VARCHAR(100),
-    gender          VARCHAR(100),
-    item_in_session INT,
-    last_name       VARCHAR(100),
-    length          FLOAT4,
-    level           VARCHAR(100),
-    location        VARCHAR(100),
-    method          VARCHAR(100),
-    page            VARCHAR(100),
-    registration    FLOAT8,
-    session_id      INT,
-    song            VARCHAR(200),
-    status          INT,
-    ts              BIGINT,
-    user_agent      VARCHAR(300),
-    user_id         VARCHAR(100)
+staging_events_table_create = (""" CREATE TABLE staging_events_table (
+    staging_event_id    BIGINT IDENTITY(0,1) NOT NULL PRIMARY KEY,
+    artist              VARCHAR(200),
+    auth                VARCHAR(100),
+    first_name          VARCHAR(100),
+    gender              VARCHAR(100),
+    item_in_session     INT,
+    last_name           VARCHAR(100),
+    length              FLOAT4,
+    level               VARCHAR(100),
+    location            VARCHAR(100),
+    method              VARCHAR(100),
+    page                VARCHAR(100),
+    registration        FLOAT8,
+    session_id          INT,
+    song                VARCHAR(200),
+    status              INT,
+    ts                  BIGINT,
+    user_agent          VARCHAR(300),
+    user_id             INT
     )
     ;
 """)
 
-songplay_table_create = (""" CREATE TABLE IF NOT EXISTS songplays (
-    songplay_id BIGINT IDENTITY(0,1) PRIMARY KEY,
+songplay_table_create = (""" CREATE TABLE songplays (
+    songplay_id         BIGINT IDENTITY(0,1) PRIMARY KEY,
     --start_time BIGINT REFERENCES time(start_time) distkey,
-    start_time BIGINT,
-    user_id         VARCHAR(100) NOT NULL,
-    level VARCHAR(10),
-    song_id VARCHAR(20) NOT NULL,
-    artist_id VARCHAR(20) NOT NULL,
-    session_id INT,
-    location VARCHAR(256),
-    user_agent VARCHAR(256)
+    start_time          BIGINT distkey,
+    user_id             VARCHAR(100) NOT NULL,
+    level               VARCHAR(10),
+    song_id             VARCHAR(20) NOT NULL,
+    artist_id           VARCHAR(20) NOT NULL,
+    session_id          INT,
+    location            VARCHAR(256),
+    user_agent          VARCHAR(256)
     )
     sortkey(level, start_time);
 """)
 
-user_table_create = (""" CREATE TABLE IF NOT EXISTS users (
-    user_id VARCHAR(100) PRIMARY KEY,
-    first_name VARCHAR(256),
-    last_name VARCHAR(256),
-    gender CHAR(1),
-    level VARCHAR(10) NOT NULL
+user_table_create = (""" CREATE TABLE users (
+    user_id             INT PRIMARY KEY,
+    first_name          VARCHAR(256),
+    last_name           VARCHAR(256),
+    gender              CHAR(1),
+    level               VARCHAR(10) NOT NULL
     )
     diststyle all
     sortkey(level, gender, first_name, last_name);
 """)
 
-song_table_create = (""" CREATE TABLE IF NOT EXISTS songs (
-    song_id VARCHAR(20) PRIMARY KEY,
-    title VARCHAR(256) NOT NULL,
-    artist_id VARCHAR(20) NOT NULL,
-    year SMALLINT NOT NULL,
-    duration NUMERIC NOT NULL
+song_table_create = (""" CREATE TABLE songs (
+    song_id             VARCHAR(20) PRIMARY KEY,
+    title               VARCHAR(256) NOT NULL,
+    artist_id           VARCHAR(20) NOT NULL,
+    year                SMALLINT NOT NULL,
+    duration            NUMERIC NOT NULL
 )
 diststyle all
 sortkey(year, title, duration);
 """)
 
-artist_table_create = ("""CREATE TABLE IF NOT EXISTS artists (
-    artist_id VARCHAR(20) PRIMARY KEY,
-    name VARCHAR(256) NOT NULL,
-    location VARCHAR(256),
-    latitude NUMERIC,
-    longitude NUMERIC
+artist_table_create = ("""CREATE TABLE artists (
+    artist_id           VARCHAR(20) PRIMARY KEY,
+    name                VARCHAR(256) NOT NULL,
+    location            VARCHAR(256),
+    latitude            NUMERIC,
+    longitude           NUMERIC
 )
 diststyle all
 sortkey(name, location);
 """)
 
-time_table_create = (
-    """
-    CREATE TABLE time (
-        start_time timestamp PRIMARY KEY distkey, 
-        hour SMALLINT NOT NULL,
-        day SMALLINT NOT NULL,
-        week SMALLINT NOT NULL,
-        month SMALLINT NOT NULL,
-        year SMALLINT NOT NULL,
-        weekday SMALLINT NOT NULL
-    )
+time_table_create = ("""CREATE TABLE time (
+    start_time          TIMESTAMP PRIMARY KEY distkey, 
+    hour                SMALLINT NOT NULL,
+    day                 SMALLINT NOT NULL,
+    week                SMALLINT NOT NULL,
+    month               SMALLINT NOT NULL,
+    year                SMALLINT NOT NULL,
+    weekday             SMALLINT NOT NULL
+)
     sortkey(year, month, day);
 """)
 
@@ -132,7 +132,9 @@ FROM {} iam_role {} json {} region 'us-west-2';
 """).format(config['S3']['log_data'], config['IAM_ROLE']['ARN'], config['S3']['log_jsonpath'])
 
 staging_songs_copy = ("""
-copy staging_songs_table
+copy staging_songs_table (
+    song_id, title, duration, year, artist_id, artist_name, artist_latitude, artist_longitude, artist_location, num_songs
+)
 FROM {} iam_role {} json 'auto' region 'us-west-2';
 """).format(config['S3']['song_data'], config['IAM_ROLE']['ARN'])
 

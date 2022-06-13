@@ -26,25 +26,25 @@ DWH_IAM_ROLE_NAME = config.get("DWH", "DWH_IAM_ROLE_NAME")
 
 # Create clients for EC2, S3, IAM, and Redshift
 ec2 = boto3.resource('ec2',
-                     region_name="us-west-2",
-                     aws_access_key_id=KEY,
-                     aws_secret_access_key=SECRET
-                     )
+                    region_name="us-west-2",
+                    aws_access_key_id=KEY,
+                    aws_secret_access_key=SECRET
+                    )
 s3 = boto3.resource('s3',
                     region_name="us-west-2",
                     aws_access_key_id=KEY,
                     aws_secret_access_key=SECRET
                     )
 iam = boto3.client('iam',
-                   region_name="us-west-2",
-                   aws_access_key_id=KEY,
-                   aws_secret_access_key=SECRET
-                   )
+                    region_name="us-west-2",
+                    aws_access_key_id=KEY,
+                    aws_secret_access_key=SECRET
+                    )
 redshift = boto3.client('redshift',
-                        region_name="us-west-2",
-                        aws_access_key_id=KEY,
-                        aws_secret_access_key=SECRET
-                        )
+                    region_name="us-west-2",
+                    aws_access_key_id=KEY,
+                    aws_secret_access_key=SECRET
+                    )
 
 
 # Create the IAM role
@@ -196,7 +196,7 @@ def main():
     print("-" * 50 + "\n")
 
     # Open an incoming  TCP port to access the cluster endpoint
-    try:
+    ''' try:
         print("Opening TCP port...")
         vpc = ec2.Vpc(id=myClusterProps['VpcId'])
         defaultSg = list(vpc.security_groups.all())[0]
@@ -211,7 +211,7 @@ def main():
         print("VPC and subnets created successfully." + "\n" + "-" * 50 + "\n")
     except Exception as e:
         print(e)
-        print(f"VPC and subnets not created." + str(e) + "\n" + "-" * 50 + "\n")
+        print(f"VPC and subnets not created." + str(e) + "\n" + "-" * 50 + "\n") '''
 
 
 if __name__ == '__main__':

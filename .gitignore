@@ -2,6 +2,7 @@
 *.cfg
 test.py
 schema.py
+runtime.ipynb
 
 # ignore venv directories
 venv/* 

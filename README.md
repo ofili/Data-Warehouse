@@ -38,6 +38,8 @@ This data ETL pipeline populates the sparkifydb database in AWS Redshift.
 
 * etl.py script loads data into staging tables, then inserts data into fact and dimension tables from staging tables.
 
+* main.py script is the main script that calls all function in the create_tables.py and etl.py scripts
+
 * dwh.cfg contains configurations infomation for Redshift database.
 
 * redshift_setup.py sets up the redshift cluster and creates an IAM role for redshift to access other AWS services.
@@ -48,6 +50,8 @@ This data ETL pipeline populates the sparkifydb database in AWS Redshift.
 ---
 * First, run redshift_setup.py to set up the Redshift cluster and IAM role.
 
-* Then run create_tables.py to create the tables specified in the in the sql_queries.py file. If tables were created previously, they will be dropped and recreated.
-
-* Next, run etl.py to populate the tables created.
+* Then run main.py to 
+- create the tables specified in the in the sql_queries.py file. If tables were created previously, they will be dropped and recreated.
+- load data from S3 into staging tables.
+- insert data into fact and dimension tables from staging tables.
+---

@@ -147,6 +147,7 @@ songplay_table_insert = (""" INSERT INTO songplays (
     FROM staging_events_table st
     JOIN  staging_songs_table s
     ON st.song = s.title AND st.artist = s.artist_name AND st.length = s.duration
+    ON CONFLICT (start_time, user_id, session_id) DO NOTHING;
 """)
 
 user_table_insert = (""" INSERT INTO users (
@@ -159,7 +160,8 @@ user_table_insert = (""" INSERT INTO users (
         FROM staging_events_table
         WHERE user_id IS NOT NULL
     ) AS ranked
-    WHERE ranked.rank_user_by_id = 1;
+    WHERE ranked.rank_user_by_id = 1
+    ON CONFLICT (user_id) DO UPDATE SET level=EXCLUDED.level;
 """)
 
 song_table_insert = (""" INSERT INTO songs (song_id, title, artist_id, year, duration)
@@ -171,7 +173,8 @@ FROM (
     FROM staging_songs_table
     WHERE song_id IS NOT NULL
 ) AS ranked
-WHERE ranked.rank_song_by_id = 1;
+WHERE ranked.rank_song_by_id = 1
+ON CONFLICT (song_id) DO NOTHING;
 """)
 
 artist_table_insert = (""" INSERT INTO artists (artist_id, name, location, latitude, longitude)
@@ -183,7 +186,8 @@ FROM (
     FROM staging_songs_table
     WHERE artist_id IS NOT NULL
 ) AS ranked
-WHERE ranked.rank_artist_by_id = 1;
+WHERE ranked.rank_artist_by_id = 1
+ON CONFLICT (artist_id) DO NOTHING;
 """)
 
 time_table_insert = ("""INSERT INTO time (start_time, hour, day, week, month, year, weekday)
@@ -195,7 +199,8 @@ time_table_insert = ("""INSERT INTO time (start_time, hour, day, week, month, ye
             EXTRACT(YEAR FROM start_time) AS year,
             EXTRACT(DOW FROM start_time) AS weekday
     FROM staging_events_table
-    WHERE ts IS NOT NULL;
+    WHERE ts IS NOT NULL
+    ON CONFLICT (start_time) DO NOTHING;
 """)
 
 staging_row_count = "SELECT COUNT(*) AS count FROM {}"

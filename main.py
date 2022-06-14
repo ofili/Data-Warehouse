@@ -1,10 +1,22 @@
+''' import logging.config
 from create_tables import *
 from etl import *
+
+# Setting up logger
+logging.config.fileConfig("logging.conf")
+logger = logging.getLogger(__name__)
 
 # Run all function
 def main():
     """
-    Establish connection to redshift and create tables, drop tables, and close connection
+    - Establish connection to redshift, 
+    - calls the drop tables function,
+    - calls the create tables function,
+    - calls the load staging tables function,
+    - calls the insert tables function,
+    - calls the count staging function,
+    - calls the dim query count function,
+    - closes the connection. 
     """
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
@@ -17,43 +29,49 @@ def main():
     port = config.get('CLUSTER', 'DB_PORT')
 
     # Establish the database connection
-    print('establishing connection' + '-'*50)
+    logger.info("Establishing connection to redshift cluster")
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
     cur = conn.cursor()
-    print(f'connected to redshift cluster'.format(host))
-    print('connection established ' + '-'*50)
+    logger.debug(f"Response: {conn}")
+    logger.info(f"Connected to redshift cluster at {host}")
 
     # Drop tables
-    print('dropping tables' + '-'*50)
+    logger.info(f"Dropping tables")
     drop_tables(cur, conn)
-    print('tables dropped ' + '-'*50)
+    logger.info(f"Dropped tables ")
+    logger.info(msg="-"*50)
 
     # Create tables
-    print('creating tables' + '-'*50)
+    logger.info(f"Creating tables")
     create_tables(cur, conn)
-    print('tables created ' + '-'*50)
+    logger.info(f"Created tables ")
+    logger.info(msg="-"*50)
 
     # Load data
-    print('loading data' + '-'*50)
+    logger.info(f"Loading data into staging tables")
     load_staging_tables(cur, conn)
-    print('data loaded ' + '-'*50)
+    logger.info(f"Loaded data into staging tables ")
+    logger.info(msg="-"*50)
 
     # Count copy to staging tables
     count_staging(cur, conn)
 
     # Insert data
-    print('inserting data' + '-'*50)
+    logger.info(f"Inserting data into tables")
     insert_tables(cur, conn)
-    print('data inserted ' + '-'*50)
+    logger.info(f"Inserted data into tables ")
+    logger.info(msg="-"*50)
 
     # Count data insert
     dim_query_count(cur, conn)
 
     # Close connection
-    print('closing connection' + '-'*50)
+    logger.info(f"Closing connection")
     conn.close()
-    print('connection closed ' + '-'*50)
+    logger.info(f"Connection closed")
+
 
 if __name__ == '__main__':
     main()
-    print('*'*25 + ' all processes completed ' + '*'*25)
+    logger.info(f"Script completed")
+ '''

@@ -1,6 +1,12 @@
+import logging.config
 import configparser
 import psycopg2
+import logging.config
 from sql_queries import *
+
+# Setting up logger
+logging.config.fileConfig("logging.conf")
+logger = logging.getLogger(__name__)
 
 
 def load_staging_tables(cur, conn):
@@ -39,11 +45,16 @@ def dim_query_count(cur, conn):
         print(cur.fetchall())
 
 
-''' def main():
+# Run all function
+def main():
     """
-    Establishes connection to redshift cluster and loads staging tables.
+    - Establish connection to redshift, 
+    - calls the load staging tables function,
+    - calls the insert tables function,
+    - calls the count staging function,
+    - calls the dim query count function,
+    - closes the connection. 
     """
-
     config = configparser.ConfigParser()
     config.read('dwh.cfg')
 
@@ -54,24 +65,37 @@ def dim_query_count(cur, conn):
     password = config.get('CLUSTER', 'DB_PASSWORD')
     port = config.get('CLUSTER', 'DB_PORT')
 
-    print('-'*50 + ' establishing connection' + '-'*50)
+    # Establish the database connection
+    logger.info("Establishing connection to redshift cluster")
     conn = psycopg2.connect("host={} dbname={} user={} password={} port={}".format(*config['CLUSTER'].values()))
-    print(f'connected to ' + host)
-    print('-'*50 + ' connection established ' + '-'*50)
     cur = conn.cursor()
+    logger.debug(f"Response: {conn}")
+    logger.info(f"Connected to redshift cluster at {host}")
 
-    # Load staging tables
-    print('-'*50 + ' loading staging tables' + '-'*50)
+    # Load data
+    logger.info(f"Loading data into staging tables")
     load_staging_tables(cur, conn)
-    print('-'*50 + ' loaded staging tables' + '-'*50)
+    logger.info(f"Loaded data into staging tables ")
+    logger.info(msg="-"*50)
+
+    # Count copy to staging tables
     count_staging(cur, conn)
-    print('-'*50 + ' inserting into tables' + '-'*50)
+
+    # Insert data
+    logger.info(f"Inserting data into tables")
     insert_tables(cur, conn)
-    print('-'*50 + ' insert completed' + '-'*50)
+    logger.info(f"Inserted data into tables ")
+    logger.info(msg="-"*50)
+
+    # Count data insert
     dim_query_count(cur, conn)
 
+    # Close connection
+    logger.info(f"Closing connection")
     conn.close()
+    logger.info(f"Connection closed")
 
 
-if __name__ == "__main__":
-    main() '''
+if __name__ == '__main__':
+    main()
+    logger.info(f"Script completed")

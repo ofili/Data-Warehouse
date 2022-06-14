@@ -81,7 +81,10 @@ The table contains the following columns:
 #### Set up the redshift cluster and IAM role.
     $ python redshift_setup.py
 
-#### Insert data into staging tables
-    $ python main.py
+#### Create tables
+    $ python create_tables.py
+
+#### Load data
+    $ python etl.py
 
 Reference: [AWS Redshift Doc](https://aws.amazon.com/redshift/getting-started/?p=rs&bttn=hero&exp=b)

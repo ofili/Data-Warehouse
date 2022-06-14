@@ -5,6 +5,7 @@ schema.py
 runtime.ipynb
 logging.py
 *.ini
+main.py
 
 
 # ignore venv directories

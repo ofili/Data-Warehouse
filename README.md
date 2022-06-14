@@ -68,8 +68,6 @@ The table contains the following columns:
 
 * etl.py script loads data into staging tables, then inserts data into fact and dimension tables from staging tables.
 
-* main.py script is the main script that calls all function in the create_tables.py and etl.py scripts
-
 * dwh.cfg contains configurations infomation for Redshift database.
 
 * redshift_setup.py sets up the redshift cluster and creates an IAM role for redshift to access other AWS services.
